@@ -11,11 +11,11 @@ import java.util.BitSet;
 public class Header {
     /*
 
-     byte[10] head {
+     byte[12] head {
      bit[16] magic;//魔数 2字节
-     bit[21] sessionId;// 会话id 21位，范围为0~2097152
+     bit[32] sessionId;// 会话id 21位，范围为0~2097152
      bit[3] control;//业务控制位，1为心跳，2为中断，3未回包，剩余业务自定义
-     bit[8] payload;//冗余拓展字段 1字节
+     bit[13] payload;//冗余拓展字段 1字节
      bit[32] length;//长度 4字节
      }
 
@@ -80,28 +80,36 @@ public class Header {
     private BitSet sessionIdToBitSet() {
         BitSet original = ByteConvertUtil.intToBitSet(sessionId);
 
-        BitSet sessionBit = new BitSet();
-        for (int i = 11; i < 32; i++) {
-            if (original.get(i)) {
-                sessionBit.set(i);
-            }
-        }
-
-        return sessionBit;
+//        BitSet sessionBit = new BitSet();
+//        for (int i = 11; i < 32; i++) {
+//            if (original.get(i)) {
+//                sessionBit.set(i);
+//            }
+//        }
+//
+//        return sessionBit;
+        return original;
     }
 
     private BitSet bitSetToSessionIdBit(BitSet middleBit) {
         BitSet sessionBit = new BitSet();
 
-        int index = 11;
-        for (int i = 0; i < 21; i++) {
+//        int index = 11;
+//        for (int i = 0; i < 21; i++) {
+//            if (middleBit.get(i)) {
+//                sessionBit.set(index);
+//            }
+//
+//            index ++;
+//        }
+        int index = 0;
+        for (int i = 0; i < 32; i++) {
             if (middleBit.get(i)) {
                 sessionBit.set(index);
             }
 
             index ++;
         }
-
         return sessionBit;
     }
 
@@ -121,8 +129,16 @@ public class Header {
     private BitSet bitSetToControlBit(BitSet middleBit) {
         BitSet controlBit = new BitSet();
 
+//        int index = 29;
+//        for (int i = 21; i < 24; i++) {
+//            if (middleBit.get(i)) {
+//                controlBit.set(index);
+//            }
+//
+//            index ++;
+//        }
         int index = 29;
-        for (int i = 21; i < 24; i++) {
+        for (int i = 32; i < 35; i++) {
             if (middleBit.get(i)) {
                 controlBit.set(index);
             }
@@ -136,8 +152,14 @@ public class Header {
     private BitSet payloadToBitSet() {
         BitSet original = ByteConvertUtil.intToBitSet(payload);
 
+//        BitSet payloadBit = new BitSet();
+//        for (int i = 24; i < 32; i++) {
+//            if (original.get(i)) {
+//                payloadBit.set(i);
+//            }
+//        }
         BitSet payloadBit = new BitSet();
-        for (int i = 24; i < 32; i++) {
+        for (int i = 19; i < 32; i++) {
             if (original.get(i)) {
                 payloadBit.set(i);
             }
@@ -149,8 +171,16 @@ public class Header {
     private BitSet bitSetToPayloadBit(BitSet middleBit) {
         BitSet payloadBit = new BitSet();
 
-        int index = 24;
-        for (int i = 24; i < 32; i++) {
+//        int index = 24;
+//        for (int i = 24; i < 32; i++) {
+//            if (middleBit.get(i)) {
+//                payloadBit.set(index);
+//            }
+//
+//            index ++;
+//        }
+        int index = 19;
+        for (int i = 35; i < 48; i++) {
             if (middleBit.get(i)) {
                 payloadBit.set(index);
             }
@@ -169,8 +199,34 @@ public class Header {
         BitSet bits = new BitSet();
         int index = 0;
 
+//        //add sessionId
+//        for (int i = 11; i< 32; i++) {
+//            if (sessionBit.get(i)) {
+//                bits.set(index);
+//            }
+//            index ++;
+//        }
+//
+//        //add control
+//        for (int i = 29; i < 32; i++) {
+//            if (controlBit.get(i)) {
+//                bits.set(index);
+//            }
+//
+//            index ++;
+//        }
+//
+//        //add payload
+//        for (int i = 24; i < 32; i++) {
+//            if (payloadBit.get(i)) {
+//                bits.set(index);
+//            }
+//
+//            index ++;
+//        }
+
         //add sessionId
-        for (int i = 11; i< 32; i++) {
+        for (int i = 0; i< 32; i++) {
             if (sessionBit.get(i)) {
                 bits.set(index);
             }
@@ -187,7 +243,7 @@ public class Header {
         }
 
         //add payload
-        for (int i = 24; i < 32; i++) {
+        for (int i = 19; i < 32; i++) {
             if (payloadBit.get(i)) {
                 bits.set(index);
             }
@@ -213,7 +269,7 @@ public class Header {
         byte[] lengthByte = ByteConvertUtil.intToByteArray(length);
         byte[] middleByte = mergeBitSet();
 
-        byte[] head = new byte[10];
+        byte[] head = new byte[12];
         int index = 0;
 
         //magic
@@ -221,8 +277,8 @@ public class Header {
         index += magicByte.length;
 
         //sessionId, control, payload
-        System.arraycopy(middleByte, 0, head, index, 4);
-        index += 4;
+        System.arraycopy(middleByte, 0, head, index, 6);
+        index += 6;
 
         //length
         System.arraycopy(lengthByte, 0, head, index, lengthByte.length);
@@ -242,9 +298,9 @@ public class Header {
             throw new DecodePacketException();
         }
 
-        byte[] middleByte = new byte[4];
-        System.arraycopy(head, index, middleByte, 0, 4);
-        index += 4;
+        byte[] middleByte = new byte[6];
+        System.arraycopy(head, index, middleByte, 0, 6);
+        index += 6;
         decodeMiddleBitSet(ByteConvertUtil.byteToBitSet(middleByte));
 
         byte[] lengthByte = new byte[4];

@@ -1,6 +1,7 @@
 package com.server.scenecalc.core;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -46,7 +47,9 @@ public class ServerLauncher {
                                 .localAddress(port)
                                 .handler(initializer);
                         try {
-                            bootstrap.bind(port).sync().channel().closeFuture().await();
+                            Channel channel = bootstrap.bind(port).sync().channel();
+                            ServerContext.getInstance().setChannel(channel);
+                            channel.closeFuture().await();
                         } catch (InterruptedException e) {
                             e.printStackTrace();
                         }
